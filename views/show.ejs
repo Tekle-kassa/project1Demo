@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h2><%=employee.name%> </h2>
+    <ul>
+        <li>department: <a href="/employees?department=<%=employee.department %>"> <%=employee.department %> </a></li> 
+        <li>sex: <a href="/employees?sex=<%=employee.sex %>"> <%=employee.sex %> </a></li> 
+        
+    </ul>
+    <a href="/employees/<%=employee._id%>/edit">edit</a>
+    <form action="/employees/<%=employee._id%>?_method=DELETE"method="POSt">
+    <button>remove employee</button>
+    </form>
+</body>
+</html>
