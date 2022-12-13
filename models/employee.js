@@ -16,13 +16,13 @@ const employeeSchema=new Schema({
         required:true
     },
 
-    status:{
+    action:{
       type:String,
       enum:['admin','normal'],
       required:true
       
     },
-    action:{
+    status:{
         type:Boolean
     }
 })

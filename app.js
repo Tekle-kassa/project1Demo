@@ -5,13 +5,24 @@ const bodyParser=require('body-parser');
 const path=require('path');
 const methodOverride=require('method-override');
 const session=require('express-session');
+const bcrypt=require('bcrypt')
 
 
 
 const Employee=require('./models/employee')
+const Admin=require('./models/admin');
+
 
 const app=express();
 const sessionOptions={secret:'agoodsecret',resave:false,saveUninitialized:true}
+const isLoggedIn=((req,res,next)=>{
+    const {username,password}=req.body;
+    if(username==='admin'&&password==='admin'){
+        next()
+    }else{
+        // res.flash('not an admin)
+    }
+})
 
 mongoose.connect('mongodb://127.0.0.1:27017/pro1Demo',
 {useNewUrlParser:true,
@@ -37,6 +48,41 @@ app.use(express.urlencoded({extended:true}))
 app.get('/',(req,res)=>{
     res.redirect('/employees')
     //res.redirect('/login')
+})
+app.get('/register',(req,res)=>{
+    res.render('register');
+})
+
+app.post('/register',async(req,res)=>{
+    const {password,username}=req.body;
+    const hash=await bcrypt.hash(password,12)
+    const admin=new Admin({
+        username,
+        password:hash 
+    })
+    await admin.save()
+    req.session.user_id=admin._id
+
+    res.redirect('/')
+})
+
+app.get('/login',(req,res)=>{
+    res.render('login')
+})
+app.post('/login',async(req,res)=>{
+    const {username,password}=req.body;
+   const foundUser=await Admin.findAndValidate(username,password)
+    if(!foundUser){
+        res.redirect('/login')
+    }else{
+        req.session.user_id=foundUser._id
+        res.send('welcome')
+    }
+ 
+})
+app.post('/logout',(req,res)=>{
+    req.session.user_id=null;
+    res.redirect('/')
 })
 app.get('/employees',async(req,res)=>{
     const {department,sex}=req.query;
