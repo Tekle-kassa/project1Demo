@@ -7,20 +7,16 @@
     <title>Document</title>
 </head>
 <body>
-    
     <%-include('./partials/flash') %> 
-    <h1>Employees</h1>
-    <ul>
-        <% for(employee of employees){ %>
-            <li><a href="/employees/<%=employee._id %> "><%=employee.name %></a> </li>
-            <% } %>  
-    </ul>
     <% if(!currentUser){ %>
         <a href="/register">signUp</a>
-    <a href="/login">login</a>
+    <a href="/login">  login</a>
         <% }else{ %>  
     
-    <a href="/logout">logout</a>
+    <a href="/logout">  logout</a>
+    <a href="/employees/new">new employee</a>
+    
     <% } %> 
+    <a href="/employees">  employees</a>
 </body>
 </html>

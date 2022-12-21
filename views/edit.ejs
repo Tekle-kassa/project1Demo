@@ -11,19 +11,29 @@
     <form action="/employees/<%=employee._id%>?_method=PUT" method="POST">
         <div>
             <label for="name">name</label>
-            <input type="text"id="name" name="name" value="<%=employee.name %> ">
+            <input type="text"id="name" name="name" value="<%=employee.name %> "required>
         </div>
        <div>
            <label for="sex">sex</label>
-           <input type="text" id="sex" name="sex" value="<%=employee.sex %> ">
+           <!-- <input type="text" id="sex" name="sex" value="<%=employee.sex %> "required> -->
+           <select name="sex" id="sex">
+           <% for(let s of sex){ %>
+            <option value="<%=s%>"<%=employee.sex===s? 'selected' : '' %> ><%=s%></option>
+            <% } %>  
+           </select>
        </div>
         <div>
             <label for="department">Department</label>
-            <input type="text" id="department" name="department" value="<%=employee.department %> ">
+            <input type="text" id="department" name="department" value="<%=employee.department %> "required>
         </div>
         <div>
             <label for="action">action</label>
-            <input type="text" id="action" name="action" value="<%=employee.action %> ">
+            <!-- <input type="text" id="action" name="action" value="<%=employee.action %> "required> -->
+            <select name="action" id="action">
+               <% for(let role of action){ %>
+                <option value="<%=role%>" <%=employee.action===role? 'selected' : '' %> ><%=role%></option>
+                <% } %>  
+            </select>
         </div>
        
         <button>submit</button>

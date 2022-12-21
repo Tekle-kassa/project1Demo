@@ -5,24 +5,26 @@ const bodyParser=require('body-parser');
 const path=require('path');
 const methodOverride=require('method-override');
 const session=require('express-session');
-const bcrypt=require('bcrypt')
+const flash=require('connect-flash')
+const ejsMate=require('ejs-mate')
+const passport=require('passport');
+const LocalStrategy=require('passport-local')
 
 
+
+
+const catchAsync=require('./utils/catchAsync')
+const ExpressError=require('./utils/ExpressError')
 
 const Employee=require('./models/employee')
 const Admin=require('./models/admin');
 
 
+const employees=require('./routes/employees')
+
 const app=express();
 const sessionOptions={secret:'agoodsecret',resave:false,saveUninitialized:true}
-const isLoggedIn=((req,res,next)=>{
-    const {username,password}=req.body;
-    if(username==='admin'&&password==='admin'){
-        next()
-    }else{
-        // res.flash('not an admin)
-    }
-})
+
 
 mongoose.connect('mongodb://127.0.0.1:27017/pro1Demo',
 {useNewUrlParser:true,
@@ -34,19 +36,42 @@ useUnifiedTopology:true})
     console.log(e);
 })
 // mongoose.set('strictQuery', true);
-
+app.engine('ejs',ejsMate)
 app.set('view engine','ejs');
 app.set('views',path.join(__dirname,'views'));
 
 app.use(express.static(path.join(__dirname,'public')))
 app.use(methodOverride('_method')) 
 app.use(session(sessionOptions))
+app.use(flash())
+app.use(passport.initialize())
+app.use(passport.session());
+
+
+
+
+
+passport.use(new LocalStrategy(Admin.authenticate()))
+
+passport.serializeUser(Admin.serializeUser())
+passport.deserializeUser(Admin.deserializeUser())
 // app.use(bodyParser.urlencoded({extended:true}))
 app.use(express.urlencoded({extended:true}))
 
+app.use((req,res,next)=>{
+    res.locals.currentUser=req.user;
+   res.locals.success=req.flash('success')
+    res.locals.error=req.flash('error')
+    next()
+})
+
+app.use('/employees',employees)
+
 
 app.get('/',(req,res)=>{
-    res.redirect('/employees')
+    
+    // res.redirect('/employees')
+    res.render('home')
     //res.redirect('/login')
 })
 app.get('/register',(req,res)=>{
@@ -54,87 +79,64 @@ app.get('/register',(req,res)=>{
 })
 
 app.post('/register',async(req,res)=>{
-    const {password,username}=req.body;
-    const hash=await bcrypt.hash(password,12)
-    const admin=new Admin({
-        username,
-        password:hash 
+    const {email,password,username}=req.body;
+    // const hash=await bcrypt.hash(password,12)
+    const trueAdmin=await Employee.findOne({name:username});
+   
+  if(trueAdmin && !(trueAdmin.action=='admin')){
+    req.flash('error','you are not an admin')
+        res.redirect('/employees')
+    }else if(trueAdmin && trueAdmin.action == "admin"){
+        const admin=new Admin({username,email})
+        const registeredAdmin= await Admin.register(admin,password);
+        req.login(registeredAdmin,err=>{
+            if(err) return res.send(err)
+            req.flash('success','welcome')
+            res.redirect('/employees')
+        })
+        // req.session.user_id=admin._id
+           
+    }else{
+      res.send("No such user")
+    }
     })
-    await admin.save()
-    req.session.user_id=admin._id
-
-    res.redirect('/')
-})
 
 app.get('/login',(req,res)=>{
     res.render('login')
 })
-app.post('/login',async(req,res)=>{
-    const {username,password}=req.body;
-   const foundUser=await Admin.findAndValidate(username,password)
-    if(!foundUser){
-        res.redirect('/login')
-    }else{
-        req.session.user_id=foundUser._id
-        res.send('welcome')
-    }
+// app.post('/login',passport.authenticate('local',{failureRedirect:'/login'}),async(req,res)=>{
+//     const {username,password}=req.body;
+//    const foundUser=await Admin.findAndValidate(username,password)
+//     if(!foundUser){
+//         res.redirect('/login')
+//     }else{
+//         req.session.user_id=foundUser._id
+//         res.send('welcome')
+//     }
  
+// })
+app.post('/login',passport.authenticate('local',{failureFlash:true,failureRedirect:'/login'}),(req,res)=>{
+    req.flash('success','welcome back')
+    res.redirect('/employees')
 })
-app.post('/logout',(req,res)=>{
-    req.session.user_id=null;
+// app.post('/logout',(req,res)=>{
+//     req.session.user_id=null;
+//     res.redirect('/')
+// })
+
+app.get('/logout',(req,res)=>{
+    req.session.passport=null;
+    req.flash('success','good bye')
     res.redirect('/')
 })
-app.get('/employees',async(req,res)=>{
-    const {department,sex}=req.query;
-    if(department){
-        const employees= await Employee.find({department});
-        res.render('employees',{employees})
-    }
-    if(sex){
-        const employees= await Employee.find({sex});
-        res.render('employees',{employees})
-    }else{
-        const employees= await Employee.find();
-        res.render('employees',{employees})
-    }
 
-    
-   
-})
-app.get('/employees/new',(req,res)=>{
-    res.render('new')
+app.all('*',(req,res,next)=>{
+    next(new ExpressError('not found',404))
 })
 
-app.post('/employees',async(req,res)=>{
-    // console.log(req.body)
-    // res.send('creating the new employee')
-     const employee=new Employee(req.body)
-     await employee.save();
-     res.redirect('/employees')
-    
-})
-
-app.get('/employees/:id',async(req,res)=>{
-    const employee=await Employee.findById(req.params.id);
-    res.render('show',{employee})
-})
-
-app.get('/employees/:id/edit',async(req,res)=>{
-    const {id}=req.params;
-    const employee=await Employee.findById(id);
-    res.render('edit',{employee})
-})
-
-app.put('/employees/:id',async(req,res)=>{
-    const {id}=req.params;
-    const employee=await Employee.findByIdAndUpdate(id,req.body)
-   res.redirect(`/employees/${id}`)
-})
-
-app.delete('/employees/:id',async(req,res)=>{
-    const {id}=req.params;
-    await Employee.findByIdAndDelete(id);
-    res.redirect('/employees')
+app.use((err,req,res,next)=>{
+    const {statusCode=500,message='Something went Wrong'}=err;
+    res.status(statusCode).render('error',{message})
 })
 
 app.listen(3000,()=>{

@@ -11,19 +11,29 @@
     <form action="/employees" method="POST">
         <div>
             <label for="name">name</label>
-            <input type="text"id="name" name="name">
+            <input type="text"id="name" name="name" required>
         </div>
        <div>
            <label for="sex">sex</label>
-           <input type="text" id="sex" name="sex">
+           <!-- <input type="text" id="sex" name="sex"required> -->
+           <select name="sex" id="sex">
+            <% for(let s of sex){ %>
+                <option value="<%=s%>"><%=s%></option>
+                <% } %>  
+           </select>
        </div>
         <div>
             <label for="department">Department</label>
-            <input type="text" id="department" name="department">
+            <input type="text" id="department" name="department"required>
         </div>
         <div>
             <label for="action">action</label>
-            <input type="text" id="action" name="action">
+            <!-- <input type="text" id="action" name="action"> -->
+            <select name="action" id="action">
+               <% for(let role of action){ %>
+                <option value="<%=role%>"><%=role%></option>
+                <% } %>  
+            </select>
         </div>
         <button>add new employee</button>
 </form>
